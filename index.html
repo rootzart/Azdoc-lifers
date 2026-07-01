@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AZDOC Lifers — Arizona Life Sentences Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d0d;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+    }
+
+    header {
+      border-bottom: 2px solid #b00000;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: #ff3030;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      color: #888;
+      font-size: 0.85rem;
+      margin-top: 6px;
+    }
+
+    .stats-bar {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      padding: 14px 20px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      font-size: 1.1rem;
+    }
+
+    .stats-bar span {
+      color: #ff3030;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #1a1a1a;
+      border: 1px solid #444;
+      color: #e0e0e0;
+      font-family: monospace;
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+      border-radius: 4px;
+    }
+
+    input:focus { outline: none; border-color: #b00000; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    th {
+      background: #1a0000;
+      color: #ff3030;
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1px solid #b00000;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    td {
+      padding: 8px;
+      border-bottom: 1px solid #1f1f1f;
+    }
+
+    tr:hover td { background: #181818; }
+
+    .badge {
+      background: #3a0000;
+      color: #ff6060;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.75rem;
+    }
+
+    footer {
+      margin-top: 30px;
+      color: #444;
+      font-size: 0.75rem;
+      border-top: 1px solid #222;
+      padding-top: 12px;
+    }
+
+    #loading { color: #888; text-align: center; padding: 30px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚖ AZDOC Lifers Tracker</h1>
+  <p class="subtitle">Arizona Department of Corrections — Life Sentence Database</p>
+</header>
+
+<div class="stats-bar">
+  Total life sentences on record: <span id="count">Loading...</span>
+</div>
+
+<input type="text" id="search" placeholder="Search by name, ADC number, or offense..." oninput="filterTable()" />
+
+<table>
+  <thead>
+    <tr>
+      <th>ADC #</th>
+      <th>Last Name</th>
+      <th>First Name</th>
+      <th>Sentence</th>
+      <th>Offense</th>
+    </tr>
+  </thead>
+  <tbody id="tableBody">
+    <tr><td colspan="5" id="loading">Loading data...</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  Data sourced from AZDOC public records. Last updated: <span id="updated"></span>
+</footer>
+
+<script>
+  let allData = [];
+
+  document.getElementById("updated").textContent = new Date().toLocaleDateString();
+
+  fetch("lifers.json")
+    .then(r => r.json())
+    .then(data => {
+      allData = data;
+      document.getElementById("count").textContent = data.length.toLocaleString();
+      renderTable(data);
+    })
+    .catch(() => {
+      document.getElementById("loading").textContent = "Error loading data.";
+      document.getElementById("count").textContent = "N/A";
+    });
+
+  function renderTable(data) {
+    const tbody = document.getElementById("tableBody");
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5">No results found.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td>${r.ADC_NUMBER || "—"}</td>
+        <td>${r.LAST_NAME || "—"}</td>
+        <td>${r.FIRST_NAME || "—"}</td>
+        <td><span class="badge">${r.SENTENCE_TYPE || "LIFE"}</span></td>
+        <td>${r.OFFENSE || "—"}</td>
+      </tr>
+    `).join("");
+  }
+
+  function filterTable() {
+    const q = document.getElementById("search").value.toLowerCase();
+    const filtered = allData.filter(r =>
+      Object.values(r).some(v => String(v).toLowerCase().includes(q))
+    );
+    renderTable(filtered);
+  }
+</script>
+
+</body>
+</html>
